@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Email Signature Generator</title>
+<style>
+  :root {
+    --accent: #c01f41;
+    --bg: #f4f5f3;
+    --panel: #ffffff;
+    --border: #dcdfdc;
+    --text: #1a1a1a;
+    --muted: #6b6f6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: #0e2b26;
+    color: #fff;
+    padding: 16px 24px;
+  }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; font-size: 13px; color: #b9c7c3; }
+  .layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .form-panel { width: 420px; flex-shrink: 0; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .preview-panel { flex: 1; min-width: 0; position: sticky; top: 20px; }
+  fieldset { border: 1px solid var(--border); border-radius: 6px; margin: 0 0 16px; padding: 12px 14px; }
+  legend { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); padding: 0 6px; }
+  label { display: block; font-size: 12px; font-weight: 600; margin: 10px 0 4px; }
+  label.inline { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; margin: 8px 0; }
+  input[type=text], input[type=url], input[type=tel], input[type=email], textarea, select {
+    width: 100%;
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  input[type=color] { width: 44px; height: 30px; padding: 2px; border: 1px solid var(--border); border-radius: 5px; vertical-align: middle; }
+  textarea { resize: vertical; min-height: 50px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .social-row { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa; }
+  .social-row .row2 { grid-template-columns: 110px 1fr auto; align-items: center; gap: 6px; }
+  .social-row .row2 button { height: 32px; }
+  button { cursor: pointer; font-family: inherit; }
+  .btn { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+  .btn:hover { background: #f0f0f0; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-danger { color: #a30000; border-color: #e8b9b9; background: #fff; }
+  .btn-small { padding: 4px 8px; font-size: 12px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .preview-frame-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; }
+  iframe { width: 100%; height: 420px; border: 0; display: block; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .footer-note { font-size: 12px; color: var(--muted); margin-top: 14px; line-height: 1.5; }
+  .file-btn { display: inline-block; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; background: #fff; cursor: pointer; }
+  .clear-link { font-size: 12px; color: var(--muted); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Email Signature Generator</h1>
+  <p>Local, self-contained signature builder — runs entirely in this page, nothing is uploaded anywhere.</p>
+</header>
+
+<div class="layout">
+  <div class="panel form-panel">
+
+    <fieldset>
+      <legend>Contact details</legend>
+      <div class="row2">
+        <div><label for="firstName">First name</label><input id="firstName" type="text"></div>
+        <div><label for="lastName">Last name</label><input id="lastName" type="text"></div>
+      </div>
+      <label for="jobTitle">Job title</label>
+      <input id="jobTitle" type="text">
+      <label for="department">Department <span class="hint">(optional)</span></label>
+      <input id="department" type="text">
+      <label for="company">Company</label>
+      <input id="company" type="text">
+      <div class="row2">
+        <div><label for="officePhone">Office phone</label><input id="officePhone" type="tel"></div>
+        <div><label for="mobilePhone">Mobile phone <span class="hint">(optional)</span></label><input id="mobilePhone" type="tel"></div>
+      </div>
+      <label for="email">Email address</label>
+      <input id="email" type="email">
+      <label for="website">Website</label>
+      <input id="website" type="text" placeholder="epi.org">
+      <label for="address">Address <span class="hint">(optional)</span></label>
+      <textarea id="address" rows="2"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Style</legend>
+      <div class="row2">
+        <div><label for="accentColor">Accent color</label><input id="accentColor" type="color"></div>
+        <div><label for="fontFamily">Font</label>
+          <select id="fontFamily">
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+            <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+            <option value="Calibri, Arial, sans-serif">Calibri</option>
+            <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+            <option value="'Segoe UI', Arial, sans-serif">Segoe UI</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Images <span class="hint" style="text-transform:none;font-weight:400;">(optional)</span></legend>
+
+      <label style="margin-top:0;">Profile photo</label>
+      <div class="row2" style="grid-template-columns:1fr auto;">
+        <input type="text" id="profilePhotoUrl" placeholder="https://example.com/photo.jpg">
+        <label class="file-btn">Upload<input type="file" id="profilePhotoUpload" accept="image/*" style="display:none;"></label>
+      </div>
+      <div class="hint" id="profilePhotoStatus">No profile photo set.</div>
+      <button type="button" class="clear-link" id="clearProfilePhoto">remove</button>
+      <div class="row2" style="margin-top:8px;">
+        <div><label>Size (px)</label><input id="profilePhotoSize" type="text" style="width:80px;"></div>
+        <div><label class="inline" style="margin-top:22px;"><input type="checkbox" id="profilePhotoCircle"> Circular</label></div>
+      </div>
+
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+        <label style="margin-top:0;">Company logo</label>
+        <div class="row2" style="grid-template-columns:1fr auto;">
+          <input type="text" id="logoUrl" placeholder="https://example.com/logo.png">
+          <label class="file-btn">Upload<input type="file" id="logoUpload" accept="image/*" style="display:none;"></label>
+        </div>
+        <div class="hint" id="logoStatus">No logo set.</div>
+        <button type="button" class="clear-link" id="clearLogo">remove</button>
+        <label for="logoWidth">Logo width (px)</label>
+        <input id="logoWidth" type="text" style="width:80px;">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Social links</legend>
+      <div id="socialList"></div>
+      <button type="button" class="btn btn-small" id="addSocial">+ Add social link</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Call-to-action button <span class="hint" style="text-transform:none;font-weight:400;">(optional)</span></legend>
+      <label class="inline"><input type="checkbox" id="ctaEnabled"> Show button</label>
+      <label for="ctaText">Button text</label>
+      <input id="ctaText" type="text">
+      <label for="ctaUrl">Button link</label>
+      <input id="ctaUrl" type="text">
+    </fieldset>
+
+    <fieldset>
+      <legend>Footer text <span class="hint" style="text-transform:none;font-weight:400;">(optional)</span></legend>
+      <textarea id="footerText" rows="2" placeholder="e.g. a confidentiality notice"></textarea>
+    </fieldset>
+
+    <button type="button" class="clear-link" id="clearAll">Clear all fields</button>
+  </div>
+
+  <div class="panel preview-panel">
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="copyRich">Copy signature</button>
+      <button type="button" class="btn" id="copySource">Copy HTML source</button>
+      <button type="button" class="btn" id="downloadHtml">Download .html</button>
+    </div>
+    <div class="preview-frame-wrap">
+      <iframe id="previewFrame" title="Signature preview"></iframe>
+    </div>
+    <div class="footer-note">
+      <strong>Using this in Outlook:</strong> Outlook (Settings → Mail → Compose and reply → Signatures) uses Word's
+      rendering engine, not a browser. "Copy signature" copies the rendered signature so you can paste it directly
+      into that signature editor. If Outlook still reformats something after pasting, use "Download .html", open it
+      in a browser, and copy from there instead — some Outlook builds handle a browser-sourced copy more reliably.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "epiSignatureGeneratorState";
+
+  var defaultState = {
+    firstName: "Zane",
+    lastName: "Mokhiber",
+    jobTitle: "Director of Data Management & Analysis",
+    department: "",
+    company: "Economic Policy Institute | EPI Action",
+    officePhone: "(202)-331-5540",
+    mobilePhone: "",
+    email: "zmokhiber@epi.org",
+    website: "epi.org",
+    address: "1225 Eye St NW #600, Washington, D.C 20005",
+    accentColor: "#c01f41",
+    fontFamily: "Arial, Helvetica, sans-serif",
+    profilePhotoUrl: "",
+    profilePhotoDataUrl: "",
+    profilePhotoSize: "60",
+    profilePhotoCircle: true,
+    logoUrl: "https://files.epi.org/uploads/EPI40-wordmark-stacked-1200px.png",
+    logoDataUrl: "",
+    logoWidth: "130",
+    ctaEnabled: true,
+    ctaText: "Help us celebrate EPI’s 40th Anniversary!",
+    ctaUrl: "https://www.epi.org/epi40",
+    footerText: "",
+    socials: [
+      { id: 1, platform: "linkedin", url: "https://www.linkedin.com/in/zane-mokhiber-06241411b/", label: "", customIcon: "", iconUrl: "" },
+      { id: 2, platform: "bluesky", url: "https://bsky.app/profile/zanemokhiber.bsky.social", label: "", customIcon: "", iconUrl: "" }
+    ]
+  };
+
+  var blankState = (function () {
+    var s = JSON.parse(JSON.stringify(defaultState));
+    ["firstName", "lastName", "jobTitle", "department", "company", "officePhone", "mobilePhone",
+      "email", "website", "address", "profilePhotoUrl", "profilePhotoDataUrl", "logoUrl", "logoDataUrl",
+      "ctaText", "ctaUrl", "footerText"].forEach(function (k) { s[k] = ""; });
+    s.ctaEnabled = false;
+    s.socials = [];
+    return s;
+  })();
+
+  var state = null;
+  var socialIdCounter = 100;
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        return Object.assign({}, defaultState, parsed);
+      }
+    } catch (e) { /* ignore corrupt storage */ }
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function escapeAttr(str) { return escapeHtml(str); }
+
+  // ---------- Icons ----------
+  // Contact icons and the LinkedIn/X/Bluesky badges are hotlinked from HubSpot's own
+  // signature-generator CDN (and Bluesky's brand asset URL) rather than embedded, by
+  // request — the tradeoff is these depend on those hosts staying up, unlike the
+  // canvas-generated letter badges below (still used as a fallback for any platform
+  // HubSpot doesn't provide an icon for).
+
+  var CONTACT_ICON_URLS = {
+    phone: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/phone-icon-dark-2x.png",
+    mail: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/email-icon-dark-2x.png",
+    globe: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/link-icon-dark-2x.png",
+    pin: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/address-icon-dark-2x.png"
+  };
+
+  var SOCIAL_ICON_URLS = {
+    linkedin: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/linkedin-icon-dark-2x.png",
+    x: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/x-icon-dark-2x.png",
+    bluesky: "https://bsky.social/about/brand-assets/logos/bluesky_media_kit_logo_1.png"
+  };
+
+  function makeCanvas(size) {
+    var c = document.createElement("canvas");
+    c.width = size; c.height = size;
+    return c;
+  }
+
+  var SOCIAL_LABELS = {
+    linkedin: "in", x: "X", bluesky: "bsky", instagram: "ig",
+    facebook: "f", threads: "@", github: "gh"
+  };
+
+  function makeLetterBadge(letters, accentColor, circleBg) {
+    var size = 96;
+    var canvas = makeCanvas(size);
+    var ctx = canvas.getContext("2d");
+    var cx = size / 2, cy = size / 2, r = size / 2;
+    var textColor;
+    if (circleBg) {
+      ctx.fillStyle = accentColor;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      textColor = "#ffffff";
+    } else {
+      textColor = accentColor;
+    }
+    var len = (letters || "").length || 1;
+    var fontSize = len <= 2 ? size * 0.42 : len === 3 ? size * 0.32 : size * 0.26;
+    ctx.fillStyle = textColor;
+    ctx.font = "bold " + fontSize + "px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(letters, cx, cy + fontSize * 0.03);
+    return canvas.toDataURL("image/png");
+  }
+
+  function socialIconSrc(social) {
+    if (social.iconUrl) return social.iconUrl;
+    if (social.customIcon) return social.customIcon;
+    if (SOCIAL_ICON_URLS[social.platform]) return SOCIAL_ICON_URLS[social.platform];
+    var letters = social.platform === "custom" ? (social.label || "?").slice(0, 4) : SOCIAL_LABELS[social.platform] || "?";
+    return makeLetterBadge(letters, state.accentColor, false);
+  }
+
+  // ---------- Signature HTML template (Outlook-safe: inline styles, explicit table attrs, no gradients, table cells instead of inline-block for anything that must stay side-by-side) ----------
+
+  function contactRow(iconKind, altText, innerHtml) {
+    // These icons are light-colored assets that need a colored backdrop to be visible.
+    // The color is applied to the <img> itself (shows through its transparent pixels),
+    // not a separate wrapping cell, so the colored area is exactly the icon's own bounds.
+    var icon = CONTACT_ICON_URLS[iconKind];
+    return (
+      '<tr style="height:26px;">' +
+        '<td width="26" height="26" valign="middle" align="center">' +
+          '<img src="' + icon + '" width="18" height="18" alt="' + escapeAttr(altText) + '" style="display:block;border:0;background-color:' + state.accentColor + ';">' +
+        '</td>' +
+        '<td width="8" style="font-size:1px;line-height:1px;">&nbsp;</td>' +
+        '<td valign="middle" style="padding:0;color:#000000;font-family:' + state.fontFamily + ';font-size:14px;">' +
+          innerHtml +
+        '</td>' +
+      '</tr>'
+    );
+  }
+
+  function buildContactRowsHtml() {
+    var rows = "";
+    if (state.officePhone) {
+      rows += contactRow("phone", "phone", '<a href="tel:' + escapeAttr(state.officePhone.replace(/[^0-9+]/g, "")) + '" style="color:#000000;text-decoration:none;">' + escapeHtml(state.officePhone) + "</a>");
+    }
+    if (state.mobilePhone) {
+      rows += contactRow("phone", "mobile", '<a href="tel:' + escapeAttr(state.mobilePhone.replace(/[^0-9+]/g, "")) + '" style="color:#000000;text-decoration:none;">' + escapeHtml(state.mobilePhone) + " (mobile)</a>");
+    }
+    if (state.email) {
+      rows += contactRow("mail", "email", '<a href="mailto:' + escapeAttr(state.email) + '" style="color:#000000;text-decoration:none;">' + escapeHtml(state.email) + "</a>");
+    }
+    if (state.website) {
+      var href = /^https?:\/\//i.test(state.website) ? state.website : "https://" + state.website;
+      rows += contactRow("globe", "website", '<a href="' + escapeAttr(href) + '" style="color:#000000;text-decoration:none;">' + escapeHtml(state.website) + "</a>");
+    }
+    if (state.address) {
+      rows += contactRow("pin", "address", escapeHtml(state.address).replace(/\n/g, "<br>"));
+    }
+    return rows;
+  }
+
+  function buildSocialsHtml() {
+    if (!state.socials.length) return "";
+    var cells = "";
+    state.socials.forEach(function (s) {
+      if (!s.url) return;
+      var icon = socialIconSrc(s);
+      if (cells) cells += '<td width="8" style="font-size:1px;line-height:1px;">&nbsp;</td>';
+      cells += '<td valign="middle" align="center">' +
+        '<a href="' + escapeAttr(s.url) + '" target="_blank" rel="noopener noreferrer">' +
+          '<img src="' + icon + '" width="24" height="24" alt="' + escapeAttr(s.platform) + '" style="display:block;border:0;">' +
+        "</a>" +
+      "</td>";
+    });
+    if (!cells) return "";
+    // Table cells, not inline-block spans: Outlook's Word rendering engine doesn't
+    // reliably keep inline-block elements side-by-side and will stack them instead.
+    return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tbody><tr>' + cells + "</tr></tbody></table>";
+  }
+
+  function buildSignatureHtml() {
+    var font = state.fontFamily;
+    var accent = state.accentColor;
+    var fullName = (state.firstName + " " + state.lastName).trim();
+
+    var photoSrc = state.profilePhotoUrl || state.profilePhotoDataUrl;
+    var photoSize = parseInt(state.profilePhotoSize, 10) || 60;
+    var photoCell = photoSrc
+      ? '<td width="' + photoSize + '" valign="middle" style="padding-right:16px;">' +
+          '<img src="' + photoSrc + '" width="' + photoSize + '" height="' + photoSize + '" alt="' + escapeAttr(fullName) + '" style="display:block;border:0;' + (state.profilePhotoCircle ? "border-radius:50%;" : "") + '">' +
+        "</td>"
+      : "";
+
+    var nameBlock =
+      '<td valign="middle">' +
+        '<h2 style="margin:0;font-size:18px;font-family:' + font + ';color:#000000;font-weight:600;line-height:28px;">' + escapeHtml(fullName) + "</h2>" +
+        (state.jobTitle ? '<p style="margin:0;color:#000000;font-size:14px;line-height:22px;font-family:' + font + ';">' + escapeHtml(state.jobTitle) + "</p>" : "") +
+        (state.department ? '<p style="margin:0;color:#000000;font-size:14px;line-height:22px;font-family:' + font + ';">' + escapeHtml(state.department) + "</p>" : "") +
+        (state.company ? '<div style="margin:0;font-weight:500;color:#000000;font-size:14px;line-height:22px;font-family:' + font + ';">' + escapeHtml(state.company) + "</div>" : "") +
+      "</td>";
+
+    var contactRows = buildContactRowsHtml();
+    var contactBlock = contactRows
+      ? '<td width="30">&nbsp;</td>' +
+        '<td width="1" bgcolor="' + accent + '" style="font-size:1px;line-height:1px;">&nbsp;</td>' +
+        '<td width="30">&nbsp;</td>' +
+        '<td valign="middle">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:' + font + ';">' +
+            "<tbody>" + contactRows + "</tbody>" +
+          "</table>" +
+        "</td>"
+      : "";
+
+    var socialsHtml = buildSocialsHtml();
+    var logoSrc = state.logoUrl || state.logoDataUrl;
+    var logoHtml = logoSrc
+      ? '<img src="' + logoSrc + '" width="' + (parseInt(state.logoWidth, 10) || 130) + '" alt="' + escapeAttr(state.company) + '" style="display:block;max-width:' + (parseInt(state.logoWidth, 10) || 130) + 'px;">'
+      : "";
+
+    var logoSocialsRow = (logoHtml || socialsHtml)
+      ? '<tr>' +
+          '<td valign="top">' + logoHtml + "</td>" +
+          '<td align="right" valign="top">' + socialsHtml + "</td>" +
+        "</tr>"
+      : "";
+
+    var ctaRow = (state.ctaEnabled && state.ctaText && state.ctaUrl)
+      ? '<tr><td colspan="2" align="right" style="padding-top:16px;">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>' +
+            '<td bgcolor="' + accent + '" style="border-radius:3px;">' +
+              '<a href="' + escapeAttr(state.ctaUrl) + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:10px 18px;font-family:' + font + ';font-size:12px;font-weight:700;color:#ffffff;text-decoration:none;">' +
+                escapeHtml(state.ctaText) +
+              "</a>" +
+            "</td>" +
+          "</tr></tbody></table>" +
+        "</td></tr>"
+      : "";
+
+    var footerRow = state.footerText
+      ? '<tr><td colspan="2" style="padding-top:14px;font-family:' + font + ';font-size:11px;color:#6b6f6b;line-height:16px;">' + escapeHtml(state.footerText).replace(/\n/g, "<br>") + "</td></tr>"
+      : "";
+
+    var bottomTable = (logoSocialsRow || ctaRow || footerRow)
+      ? '<tr><td style="padding-top:20px;">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="font-family:' + font + ';width:600px;">' +
+            "<tbody>" + logoSocialsRow + ctaRow + footerRow + "</tbody>" +
+          "</table>" +
+        "</td></tr>"
+      : "";
+
+    var dividerRow = (logoSocialsRow || ctaRow || footerRow)
+      ? '<tr><td style="padding-top:20px;">' +
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;"><tbody><tr>' +
+            '<td height="1" bgcolor="' + accent + '" style="font-size:1px;line-height:1px;">&nbsp;</td>' +
+          "</tr></tbody></table>" +
+        "</td></tr>"
+      : "";
+
+    return (
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;font-family:' + font + ';font-size:14px;">' +
+        "<tbody>" +
+          '<tr><td>' +
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>' +
+              photoCell + nameBlock + contactBlock +
+            "</tr></tbody></table>" +
+          "</td></tr>" +
+          dividerRow +
+          bottomTable +
+        "</tbody>" +
+      "</table>"
+    );
+  }
+
+  // ---------- Rendering ----------
+
+  var previewFrame = document.getElementById("previewFrame");
+
+  function render() {
+    var html = buildSignatureHtml();
+    var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:16px;font-family:' + state.fontFamily + ';}</style></head><body>' + html + "</body></html>";
+    previewFrame.srcdoc = doc;
+    saveState();
+  }
+
+  // ---------- Toast ----------
+
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- Clipboard / download ----------
+
+  function copyRichHtml() {
+    var html = buildSignatureHtml();
+    var handled = false;
+    try {
+      var container = document.createElement("div");
+      container.setAttribute("contenteditable", "true");
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.innerHTML = html;
+      document.body.appendChild(container);
+      var range = document.createRange();
+      range.selectNodeContents(container);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      handled = document.execCommand("copy");
+      sel.removeAllRanges();
+      document.body.removeChild(container);
+    } catch (e) { handled = false; }
+
+    if (handled) { toast("Signature copied — paste into Outlook"); return; }
+
+    if (navigator.clipboard && window.ClipboardItem) {
+      var item = new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([html], { type: "text/plain" })
+      });
+      navigator.clipboard.write([item]).then(function () {
+        toast("Signature copied — paste into Outlook");
+      }).catch(function () {
+        toast("Copy failed — try Download instead");
+      });
+    } else {
+      toast("Copy not supported here — use Download instead");
+    }
+  }
+
+  function copySourceHtml() {
+    var html = buildSignatureHtml();
+    var handled = false;
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = html;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      handled = document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch (e) { handled = false; }
+
+    if (handled) { toast("HTML source copied"); return; }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(html).then(function () {
+        toast("HTML source copied");
+      }).catch(function () {
+        toast("Copy failed");
+      });
+    } else {
+      toast("Copy not supported here");
+    }
+  }
+
+  function downloadHtml() {
+    var html = buildSignatureHtml();
+    var full = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Email Signature</title></head><body>" + html + "</body></html>";
+    var blob = new Blob([full], { type: "text/html" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "email-signature.html";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    toast("Downloaded email-signature.html");
+  }
+
+  // ---------- Form wiring ----------
+
+  var textFieldIds = [
+    "firstName", "lastName", "jobTitle", "department", "company",
+    "officePhone", "mobilePhone", "email", "website", "address",
+    "profilePhotoSize", "logoWidth", "ctaText", "ctaUrl", "footerText"
+  ];
+
+  function bindTextFields() {
+    textFieldIds.forEach(function (id) {
+      var el = document.getElementById(id);
+      el.value = state[id];
+      el.addEventListener("input", function () {
+        state[id] = el.value;
+        render();
+      });
+    });
+  }
+
+  function bindColorAndSelect() {
+    var accentEl = document.getElementById("accentColor");
+    accentEl.value = state.accentColor;
+    accentEl.addEventListener("input", function () { state.accentColor = accentEl.value; render(); });
+
+    var fontEl = document.getElementById("fontFamily");
+    fontEl.value = state.fontFamily;
+    fontEl.addEventListener("change", function () { state.fontFamily = fontEl.value; render(); });
+
+    var ctaEnabledEl = document.getElementById("ctaEnabled");
+    ctaEnabledEl.checked = state.ctaEnabled;
+    ctaEnabledEl.addEventListener("change", function () { state.ctaEnabled = ctaEnabledEl.checked; render(); });
+
+    var profilePhotoCircleEl = document.getElementById("profilePhotoCircle");
+    profilePhotoCircleEl.checked = state.profilePhotoCircle;
+    profilePhotoCircleEl.addEventListener("change", function () { state.profilePhotoCircle = profilePhotoCircleEl.checked; render(); });
+  }
+
+  // Wires a "paste a URL" + "upload a file" pair that share one logical image slot.
+  // Setting one clears the other so there's always exactly one active source.
+  function bindImagePair(urlElId, uploadElId, statusElId, clearElId, urlKey, dataKey, noneText) {
+    var urlEl = document.getElementById(urlElId);
+    var uploadEl = document.getElementById(uploadElId);
+    var statusEl = document.getElementById(statusElId);
+    var clearEl = document.getElementById(clearElId);
+
+    urlEl.value = state[urlKey];
+
+    function refreshStatus() {
+      if (state[urlKey]) statusEl.textContent = "Using image URL.";
+      else if (state[dataKey]) statusEl.textContent = "Using uploaded image.";
+      else statusEl.textContent = noneText;
+    }
+
+    urlEl.addEventListener("input", function () {
+      state[urlKey] = urlEl.value;
+      if (urlEl.value) { state[dataKey] = ""; uploadEl.value = ""; }
+      refreshStatus();
+      render();
+    });
+
+    uploadEl.addEventListener("change", function () {
+      var file = uploadEl.files && uploadEl.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        state[dataKey] = reader.result;
+        state[urlKey] = "";
+        urlEl.value = "";
+        refreshStatus();
+        render();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    clearEl.addEventListener("click", function () {
+      state[urlKey] = "";
+      state[dataKey] = "";
+      urlEl.value = "";
+      uploadEl.value = "";
+      refreshStatus();
+      render();
+    });
+
+    refreshStatus();
+  }
+
+  var socialListEl = document.getElementById("socialList");
+
+  function renderSocialList() {
+    socialListEl.innerHTML = "";
+    state.socials.forEach(function (social) {
+      var row = document.createElement("div");
+      row.className = "social-row";
+
+      var line1 = document.createElement("div");
+      line1.className = "row2";
+
+      var select = document.createElement("select");
+      ["linkedin", "x", "bluesky", "instagram", "facebook", "threads", "github", "custom"].forEach(function (p) {
+        var opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p === "x" ? "X" : p.charAt(0).toUpperCase() + p.slice(1);
+        if (p === social.platform) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", function () {
+        social.platform = select.value;
+        render();
+        renderSocialList();
+      });
+
+      var urlInput = document.createElement("input");
+      urlInput.type = "text";
+      urlInput.placeholder = "https://...";
+      urlInput.value = social.url;
+      urlInput.addEventListener("input", function () { social.url = urlInput.value; render(); });
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-small btn-danger";
+      removeBtn.textContent = "✕";
+      removeBtn.addEventListener("click", function () {
+        state.socials = state.socials.filter(function (s) { return s.id !== social.id; });
+        render();
+        renderSocialList();
+      });
+
+      line1.appendChild(select);
+      line1.appendChild(urlInput);
+      line1.appendChild(removeBtn);
+      row.appendChild(line1);
+
+      if (social.platform === "custom") {
+        var labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.placeholder = "Badge letters, e.g. GH";
+        labelInput.value = social.label || "";
+        labelInput.style.marginTop = "6px";
+        labelInput.addEventListener("input", function () { social.label = labelInput.value; render(); });
+        row.appendChild(labelInput);
+      }
+
+      var line2 = document.createElement("div");
+      line2.className = "row2";
+      line2.style.gridTemplateColumns = "1fr auto";
+      line2.style.marginTop = "6px";
+
+      var iconUrlInput = document.createElement("input");
+      iconUrlInput.type = "text";
+      iconUrlInput.placeholder = "Custom icon URL (optional)";
+      iconUrlInput.value = social.iconUrl || "";
+      iconUrlInput.addEventListener("input", function () {
+        social.iconUrl = iconUrlInput.value;
+        if (iconUrlInput.value) { social.customIcon = ""; iconUploadInput.value = ""; }
+        render();
+      });
+
+      var iconUploadLabel = document.createElement("label");
+      iconUploadLabel.className = "file-btn btn-small";
+      iconUploadLabel.textContent = "Upload icon";
+      var iconUploadInput = document.createElement("input");
+      iconUploadInput.type = "file";
+      iconUploadInput.accept = "image/*";
+      iconUploadInput.style.display = "none";
+      iconUploadInput.addEventListener("change", function () {
+        var file = iconUploadInput.files && iconUploadInput.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          social.customIcon = reader.result;
+          social.iconUrl = "";
+          iconUrlInput.value = "";
+          render();
+        };
+        reader.readAsDataURL(file);
+      });
+      iconUploadLabel.appendChild(iconUploadInput);
+
+      line2.appendChild(iconUrlInput);
+      line2.appendChild(iconUploadLabel);
+      row.appendChild(line2);
+
+      if (social.iconUrl || social.customIcon) {
+        var clearIconBtn = document.createElement("button");
+        clearIconBtn.type = "button";
+        clearIconBtn.className = "clear-link";
+        clearIconBtn.style.marginTop = "6px";
+        clearIconBtn.textContent = "remove custom icon";
+        clearIconBtn.addEventListener("click", function () {
+          social.iconUrl = ""; social.customIcon = "";
+          render();
+          renderSocialList();
+        });
+        row.appendChild(clearIconBtn);
+      }
+
+      socialListEl.appendChild(row);
+    });
+  }
+
+  document.getElementById("addSocial").addEventListener("click", function () {
+    state.socials.push({ id: ++socialIdCounter, platform: "linkedin", url: "", label: "", customIcon: "", iconUrl: "" });
+    renderSocialList();
+    render();
+  });
+
+  document.getElementById("clearAll").addEventListener("click", function () {
+    if (!confirm("Clear all fields and start over?")) return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(blankState)); } catch (e) { /* storage unavailable */ }
+    location.reload();
+  });
+
+  document.getElementById("copyRich").addEventListener("click", copyRichHtml);
+  document.getElementById("copySource").addEventListener("click", copySourceHtml);
+  document.getElementById("downloadHtml").addEventListener("click", downloadHtml);
+
+  // ---------- Init ----------
+
+  state = loadState();
+  socialIdCounter = state.socials.reduce(function (max, s) { return Math.max(max, s.id); }, 100);
+  bindTextFields();
+  bindColorAndSelect();
+  bindImagePair("profilePhotoUrl", "profilePhotoUpload", "profilePhotoStatus", "clearProfilePhoto", "profilePhotoUrl", "profilePhotoDataUrl", "No profile photo set.");
+  bindImagePair("logoUrl", "logoUpload", "logoStatus", "clearLogo", "logoUrl", "logoDataUrl", "No logo set.");
+  renderSocialList();
+  render();
+
+})();
+</script>
+
+</body>
+</html>
