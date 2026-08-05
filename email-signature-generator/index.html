@@ -220,7 +220,7 @@
     address: "1225 Eye St NW #600, Washington, D.C 20005",
     accentColor: "#c01f41",
     fontFamily: "Arial, Helvetica, sans-serif",
-    contactIconCircle: true,
+    contactIconCircle: false,
     socialIconCircle: false,
     profilePhotoUrl: "",
     profilePhotoDataUrl: "",
@@ -343,7 +343,7 @@
 
   function contactRow(iconKind, altText, innerHtml) {
     var icon = CONTACT_ICON_URLS[iconKind];
-    var swatchStyle = "background-color:" + state.accentColor + ";" + (state.contactIconCircle ? "border-radius:50%;" : "");
+    var swatchStyle = state.contactIconCircle ? "background-color:" + state.accentColor + ";border-radius:50%;" : "";
     return (
       '<tr style="height:26px;">' +
         '<td width="26" height="26" valign="middle" align="center" style="' + swatchStyle + '">' +
