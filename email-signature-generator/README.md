@@ -10,7 +10,7 @@ dependency.
 
 ## Use
 
-Open `index.html` in a browser. Fill in the form on the left; the preview
+Open `signature-generator.html` in a browser. Fill in the form on the left; the preview
 on the right updates live.
 
 - **Copy signature** — copies the rendered signature (rich HTML) so you can
