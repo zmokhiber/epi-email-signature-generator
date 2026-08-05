@@ -1,8 +1,12 @@
 # Email Signature Generator
 
-A local, single-file signature builder. No install, no server, no external
-dependencies — everything (icons, uploaded logo) is embedded directly into
-the generated HTML so the output never breaks due to a missing hosted image.
+A local, single-file signature builder. No install, no server. Uploaded
+photos/logos are embedded directly into the generated HTML as base64. The
+phone/email/website/address icons and the LinkedIn/X/Bluesky badges are
+hotlinked from HubSpot's own icon CDN (and Bluesky's brand asset URL) by
+choice, so those depend on those hosts staying reachable — everything else
+(profile photo, logo, any custom social icon you upload) has no such
+dependency.
 
 ## Use
 
@@ -34,25 +38,32 @@ This tool avoids those properties entirely:
 - Layout is nested `<table>`s with explicit pixel widths, not flexbox/CSS
   grid.
 - Dividers are 1px solid-color table cells (`bgcolor`), not CSS borders.
-- Icons are plain raster PNGs (canvas-drawn, then embedded as base64),
-  never SVG or CSS-drawn shapes — Word's engine doesn't render SVG at all.
+- Anything that must sit side-by-side (social icons) is laid out as table
+  cells, not `<div>`/inline-block — Word's renderer doesn't reliably keep
+  inline-block elements from stacking.
+- Icon "background" colors are plain `background-color` on a table cell,
+  not `linear-gradient`.
 - The call-to-action button is a bulletproof table-button, not a styled
   `<span>`/`<a>` with border-radius as its only shape.
 
 ## Customizing
 
 - Accent color, font, and whether contact/social icons sit on a colored
-  circle are all exposed in the **Style** section.
+  circle (square if unchecked, for contact icons) are all exposed in the
+  **Style** section.
 - Social links support LinkedIn, X, Bluesky, Instagram, Facebook, Threads,
-  GitHub, or a custom platform (with your own badge letters or an uploaded
-  icon image).
-- Logo is uploaded from disk and embedded as base64 — no hosting required.
+  GitHub, or a custom platform. LinkedIn/X/Bluesky use HubSpot's/Bluesky's
+  real icon; any row can override its icon with a custom URL or upload,
+  which also covers Instagram/Facebook/Threads/GitHub/custom (otherwise a
+  generated letter badge).
+- Profile photo and company logo each take a hosted URL or a local upload.
 
 ## Known limitations
 
-- Icons are simple generated glyphs (drawn on canvas), not official brand
-  logos — this sidesteps hosting/trademark concerns. Use the "custom icon"
-  upload on a social row if you want an exact brand mark instead.
+- The phone/email/website/address icons and default LinkedIn/X/Bluesky
+  badges are hotlinked, not embedded — if HubSpot's CDN or Bluesky's asset
+  URL ever goes away, those specific icons would break. Override any of
+  them with a custom icon URL/upload if that's ever a concern.
 - Always do a final check by pasting into Outlook and sending yourself a
   test email — this tool eliminates the well-known CSS incompatibilities,
   but no browser preview is a perfect stand-in for Outlook's own renderer.

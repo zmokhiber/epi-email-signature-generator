@@ -126,8 +126,8 @@
           </select>
         </div>
       </div>
-      <label class="inline"><input type="checkbox" id="contactIconCircle"> Circle background behind contact icons</label>
-      <label class="inline"><input type="checkbox" id="socialIconCircle"> Circle background behind social icons</label>
+      <label class="inline"><input type="checkbox" id="contactIconCircle"> Circular contact icon background (square if unchecked)</label>
+      <label class="inline"><input type="checkbox" id="socialIconCircle"> Colored circle behind social icons</label>
     </fieldset>
 
     <fieldset>
@@ -277,83 +277,30 @@
 
   function escapeAttr(str) { return escapeHtml(str); }
 
-  // ---------- Icon generation (canvas -> PNG data URI, so exported signatures are self-contained) ----------
+  // ---------- Icons ----------
+  // Contact icons and the LinkedIn/X/Bluesky badges are hotlinked from HubSpot's own
+  // signature-generator CDN (and Bluesky's brand asset URL) rather than embedded, by
+  // request — the tradeoff is these depend on those hosts staying up, unlike the
+  // canvas-generated letter badges below (still used as a fallback for any platform
+  // HubSpot doesn't provide an icon for).
+
+  var CONTACT_ICON_URLS = {
+    phone: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/phone-icon-dark-2x.png",
+    mail: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/email-icon-dark-2x.png",
+    globe: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/link-icon-dark-2x.png",
+    pin: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/address-icon-dark-2x.png"
+  };
+
+  var SOCIAL_ICON_URLS = {
+    linkedin: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/linkedin-icon-dark-2x.png",
+    x: "https://cdn2.hubspot.net/hubfs/53/tools/email-signature-generator/icons/x-icon-dark-2x.png",
+    bluesky: "https://bsky.social/about/brand-assets/logos/bluesky_media_kit_logo_1.png"
+  };
 
   function makeCanvas(size) {
     var c = document.createElement("canvas");
     c.width = size; c.height = size;
     return c;
-  }
-
-  function drawPhoneGlyph(ctx, cx, cy, r) {
-    ctx.beginPath();
-    ctx.arc(cx - r * 0.28, cy - r * 0.28, r * 0.55, degToRad(15), degToRad(195));
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx + r * 0.28, cy + r * 0.28, r * 0.55, degToRad(195), degToRad(375));
-    ctx.stroke();
-  }
-
-  function drawMailGlyph(ctx, cx, cy, r) {
-    var w = r * 1.7, h = r * 1.15;
-    var x0 = cx - w / 2, y0 = cy - h / 2;
-    ctx.strokeRect(x0, y0, w, h);
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(cx, cy + h * 0.12);
-    ctx.lineTo(x0 + w, y0);
-    ctx.stroke();
-  }
-
-  function drawGlobeGlyph(ctx, cx, cy, r) {
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(cx, cy, r * 0.42, r, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - r * 0.87, cy - r * 0.5); ctx.lineTo(cx + r * 0.87, cy - r * 0.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - r * 0.87, cy + r * 0.5); ctx.lineTo(cx + r * 0.87, cy + r * 0.5); ctx.stroke();
-  }
-
-  function drawPinGlyph(ctx, cx, cy, r) {
-    var headCy = cy - r * 0.2;
-    ctx.beginPath();
-    ctx.arc(cx, headCy, r * 0.75, Math.PI, 0, false);
-    ctx.lineTo(cx, cy + r);
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
-    ctx.arc(cx, headCy, r * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  function degToRad(d) { return (d * Math.PI) / 180; }
-
-  var CONTACT_GLYPHS = { phone: drawPhoneGlyph, mail: drawMailGlyph, globe: drawGlobeGlyph, pin: drawPinGlyph };
-
-  function makeContactIcon(kind, accentColor, circleBg) {
-    var size = 96;
-    var canvas = makeCanvas(size);
-    var ctx = canvas.getContext("2d");
-    var cx = size / 2, cy = size / 2, r = size / 2;
-    var glyphColor, glyphR;
-    if (circleBg) {
-      ctx.fillStyle = accentColor;
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-      glyphColor = "#ffffff";
-      glyphR = r * 0.52;
-    } else {
-      glyphColor = accentColor;
-      glyphR = r * 0.85;
-    }
-    ctx.strokeStyle = glyphColor;
-    ctx.fillStyle = glyphColor;
-    ctx.lineWidth = size * 0.09;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    var fn = CONTACT_GLYPHS[kind];
-    if (fn) fn(ctx, cx, cy, glyphR);
-    return canvas.toDataURL("image/png");
   }
 
   var SOCIAL_LABELS = {
@@ -387,19 +334,22 @@
   function socialIconSrc(social) {
     if (social.iconUrl) return social.iconUrl;
     if (social.customIcon) return social.customIcon;
+    if (SOCIAL_ICON_URLS[social.platform]) return SOCIAL_ICON_URLS[social.platform];
     var letters = social.platform === "custom" ? (social.label || "?").slice(0, 4) : SOCIAL_LABELS[social.platform] || "?";
     return makeLetterBadge(letters, state.accentColor, state.socialIconCircle);
   }
 
-  // ---------- Signature HTML template (Outlook-safe: inline styles, explicit table attrs, no border-radius/gradients/backgrounds relied upon, raster icons only) ----------
+  // ---------- Signature HTML template (Outlook-safe: inline styles, explicit table attrs, no gradients, table cells instead of inline-block for anything that must stay side-by-side) ----------
 
   function contactRow(iconKind, altText, innerHtml) {
-    var icon = makeContactIcon(iconKind, state.accentColor, state.contactIconCircle);
+    var icon = CONTACT_ICON_URLS[iconKind];
+    var swatchStyle = "background-color:" + state.accentColor + ";" + (state.contactIconCircle ? "border-radius:50%;" : "");
     return (
       '<tr style="height:26px;">' +
-        '<td width="26" valign="middle" style="padding:0 8px 0 0;">' +
+        '<td width="26" height="26" valign="middle" align="center" style="' + swatchStyle + '">' +
           '<img src="' + icon + '" width="18" height="18" alt="' + escapeAttr(altText) + '" style="display:block;border:0;">' +
         '</td>' +
+        '<td width="8" style="font-size:1px;line-height:1px;">&nbsp;</td>' +
         '<td valign="middle" style="padding:0;color:#000000;font-family:' + state.fontFamily + ';font-size:14px;">' +
           innerHtml +
         '</td>' +
@@ -430,12 +380,13 @@
 
   function buildSocialsHtml() {
     if (!state.socials.length) return "";
+    var swatchStyle = state.socialIconCircle ? "background-color:" + state.accentColor + ";border-radius:50%;" : "";
     var cells = "";
     state.socials.forEach(function (s) {
       if (!s.url) return;
       var icon = socialIconSrc(s);
       if (cells) cells += '<td width="8" style="font-size:1px;line-height:1px;">&nbsp;</td>';
-      cells += '<td valign="middle">' +
+      cells += '<td valign="middle" align="center" style="' + swatchStyle + '">' +
         '<a href="' + escapeAttr(s.url) + '" target="_blank" rel="noopener noreferrer">' +
           '<img src="' + icon + '" width="24" height="24" alt="' + escapeAttr(s.platform) + '" style="display:block;border:0;">' +
         "</a>" +
