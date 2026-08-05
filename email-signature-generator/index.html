@@ -131,14 +131,31 @@
     </fieldset>
 
     <fieldset>
-      <legend>Logo <span class="hint" style="text-transform:none;font-weight:400;">(optional)</span></legend>
-      <label class="file-btn">Upload image
-        <input type="file" id="logoUpload" accept="image/*" style="display:none;">
-      </label>
-      <button type="button" class="clear-link" id="clearLogo" style="margin-left:10px;">remove</button>
-      <div class="hint" id="logoStatus">No logo uploaded.</div>
-      <label for="logoWidth">Logo width (px)</label>
-      <input id="logoWidth" type="text" style="width:80px;">
+      <legend>Images <span class="hint" style="text-transform:none;font-weight:400;">(optional)</span></legend>
+
+      <label style="margin-top:0;">Profile photo</label>
+      <div class="row2" style="grid-template-columns:1fr auto;">
+        <input type="text" id="profilePhotoUrl" placeholder="https://example.com/photo.jpg">
+        <label class="file-btn">Upload<input type="file" id="profilePhotoUpload" accept="image/*" style="display:none;"></label>
+      </div>
+      <div class="hint" id="profilePhotoStatus">No profile photo set.</div>
+      <button type="button" class="clear-link" id="clearProfilePhoto">remove</button>
+      <div class="row2" style="margin-top:8px;">
+        <div><label>Size (px)</label><input id="profilePhotoSize" type="text" style="width:80px;"></div>
+        <div><label class="inline" style="margin-top:22px;"><input type="checkbox" id="profilePhotoCircle"> Circular</label></div>
+      </div>
+
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+        <label style="margin-top:0;">Company logo</label>
+        <div class="row2" style="grid-template-columns:1fr auto;">
+          <input type="text" id="logoUrl" placeholder="https://example.com/logo.png">
+          <label class="file-btn">Upload<input type="file" id="logoUpload" accept="image/*" style="display:none;"></label>
+        </div>
+        <div class="hint" id="logoStatus">No logo set.</div>
+        <button type="button" class="clear-link" id="clearLogo">remove</button>
+        <label for="logoWidth">Logo width (px)</label>
+        <input id="logoWidth" type="text" style="width:80px;">
+      </div>
     </fieldset>
 
     <fieldset>
@@ -205,6 +222,11 @@
     fontFamily: "Arial, Helvetica, sans-serif",
     contactIconCircle: true,
     socialIconCircle: false,
+    profilePhotoUrl: "",
+    profilePhotoDataUrl: "",
+    profilePhotoSize: "60",
+    profilePhotoCircle: true,
+    logoUrl: "https://files.epi.org/uploads/EPI40-wordmark-stacked-1200px.png",
     logoDataUrl: "",
     logoWidth: "130",
     ctaEnabled: true,
@@ -212,10 +234,20 @@
     ctaUrl: "https://www.epi.org/epi40",
     footerText: "",
     socials: [
-      { id: 1, platform: "linkedin", url: "https://www.linkedin.com/in/zane-mokhiber-06241411b/", label: "", customIcon: "" },
-      { id: 2, platform: "bluesky", url: "https://bsky.app/profile/zanemokhiber.bsky.social", label: "", customIcon: "" }
+      { id: 1, platform: "linkedin", url: "https://www.linkedin.com/in/zane-mokhiber-06241411b/", label: "", customIcon: "", iconUrl: "" },
+      { id: 2, platform: "bluesky", url: "https://bsky.app/profile/zanemokhiber.bsky.social", label: "", customIcon: "", iconUrl: "" }
     ]
   };
+
+  var blankState = (function () {
+    var s = JSON.parse(JSON.stringify(defaultState));
+    ["firstName", "lastName", "jobTitle", "department", "company", "officePhone", "mobilePhone",
+      "email", "website", "address", "profilePhotoUrl", "profilePhotoDataUrl", "logoUrl", "logoDataUrl",
+      "ctaText", "ctaUrl", "footerText"].forEach(function (k) { s[k] = ""; });
+    s.ctaEnabled = false;
+    s.socials = [];
+    return s;
+  })();
 
   var state = null;
   var socialIdCounter = 100;
@@ -353,6 +385,7 @@
   }
 
   function socialIconSrc(social) {
+    if (social.iconUrl) return social.iconUrl;
     if (social.customIcon) return social.customIcon;
     var letters = social.platform === "custom" ? (social.label || "?").slice(0, 4) : SOCIAL_LABELS[social.platform] || "?";
     return makeLetterBadge(letters, state.accentColor, state.socialIconCircle);
@@ -414,6 +447,14 @@
     var accent = state.accentColor;
     var fullName = (state.firstName + " " + state.lastName).trim();
 
+    var photoSrc = state.profilePhotoUrl || state.profilePhotoDataUrl;
+    var photoSize = parseInt(state.profilePhotoSize, 10) || 60;
+    var photoCell = photoSrc
+      ? '<td width="' + photoSize + '" valign="middle" style="padding-right:16px;">' +
+          '<img src="' + photoSrc + '" width="' + photoSize + '" height="' + photoSize + '" alt="' + escapeAttr(fullName) + '" style="display:block;border:0;' + (state.profilePhotoCircle ? "border-radius:50%;" : "") + '">' +
+        "</td>"
+      : "";
+
     var nameBlock =
       '<td valign="middle">' +
         '<h2 style="margin:0;font-size:18px;font-family:' + font + ';color:#000000;font-weight:600;line-height:28px;">' + escapeHtml(fullName) + "</h2>" +
@@ -435,8 +476,9 @@
       : "";
 
     var socialsHtml = buildSocialsHtml();
-    var logoHtml = state.logoDataUrl
-      ? '<img src="' + state.logoDataUrl + '" width="' + (parseInt(state.logoWidth, 10) || 130) + '" alt="' + escapeAttr(state.company) + '" style="display:block;max-width:' + (parseInt(state.logoWidth, 10) || 130) + 'px;">'
+    var logoSrc = state.logoUrl || state.logoDataUrl;
+    var logoHtml = logoSrc
+      ? '<img src="' + logoSrc + '" width="' + (parseInt(state.logoWidth, 10) || 130) + '" alt="' + escapeAttr(state.company) + '" style="display:block;max-width:' + (parseInt(state.logoWidth, 10) || 130) + 'px;">'
       : "";
 
     var logoSocialsRow = (logoHtml || socialsHtml)
@@ -483,7 +525,7 @@
         "<tbody>" +
           '<tr><td>' +
             '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>' +
-              nameBlock + contactBlock +
+              photoCell + nameBlock + contactBlock +
             "</tr></tbody></table>" +
           "</td></tr>" +
           dividerRow +
@@ -601,7 +643,7 @@
   var textFieldIds = [
     "firstName", "lastName", "jobTitle", "department", "company",
     "officePhone", "mobilePhone", "email", "website", "address",
-    "logoWidth", "ctaText", "ctaUrl", "footerText"
+    "profilePhotoSize", "logoWidth", "ctaText", "ctaUrl", "footerText"
   ];
 
   function bindTextFields() {
@@ -635,23 +677,43 @@
     var ctaEnabledEl = document.getElementById("ctaEnabled");
     ctaEnabledEl.checked = state.ctaEnabled;
     ctaEnabledEl.addEventListener("change", function () { state.ctaEnabled = ctaEnabledEl.checked; render(); });
+
+    var profilePhotoCircleEl = document.getElementById("profilePhotoCircle");
+    profilePhotoCircleEl.checked = state.profilePhotoCircle;
+    profilePhotoCircleEl.addEventListener("change", function () { state.profilePhotoCircle = profilePhotoCircleEl.checked; render(); });
   }
 
-  function bindLogo() {
-    var uploadEl = document.getElementById("logoUpload");
-    var statusEl = document.getElementById("logoStatus");
-    var clearEl = document.getElementById("clearLogo");
+  // Wires a "paste a URL" + "upload a file" pair that share one logical image slot.
+  // Setting one clears the other so there's always exactly one active source.
+  function bindImagePair(urlElId, uploadElId, statusElId, clearElId, urlKey, dataKey, noneText) {
+    var urlEl = document.getElementById(urlElId);
+    var uploadEl = document.getElementById(uploadElId);
+    var statusEl = document.getElementById(statusElId);
+    var clearEl = document.getElementById(clearElId);
+
+    urlEl.value = state[urlKey];
 
     function refreshStatus() {
-      statusEl.textContent = state.logoDataUrl ? "Logo loaded." : "No logo uploaded.";
+      if (state[urlKey]) statusEl.textContent = "Using image URL.";
+      else if (state[dataKey]) statusEl.textContent = "Using uploaded image.";
+      else statusEl.textContent = noneText;
     }
+
+    urlEl.addEventListener("input", function () {
+      state[urlKey] = urlEl.value;
+      if (urlEl.value) { state[dataKey] = ""; uploadEl.value = ""; }
+      refreshStatus();
+      render();
+    });
 
     uploadEl.addEventListener("change", function () {
       var file = uploadEl.files && uploadEl.files[0];
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function () {
-        state.logoDataUrl = reader.result;
+        state[dataKey] = reader.result;
+        state[urlKey] = "";
+        urlEl.value = "";
         refreshStatus();
         render();
       };
@@ -659,7 +721,9 @@
     });
 
     clearEl.addEventListener("click", function () {
-      state.logoDataUrl = "";
+      state[urlKey] = "";
+      state[dataKey] = "";
+      urlEl.value = "";
       uploadEl.value = "";
       refreshStatus();
       render();
@@ -724,19 +788,73 @@
         row.appendChild(labelInput);
       }
 
+      var line2 = document.createElement("div");
+      line2.className = "row2";
+      line2.style.gridTemplateColumns = "1fr auto";
+      line2.style.marginTop = "6px";
+
+      var iconUrlInput = document.createElement("input");
+      iconUrlInput.type = "text";
+      iconUrlInput.placeholder = "Custom icon URL (optional)";
+      iconUrlInput.value = social.iconUrl || "";
+      iconUrlInput.addEventListener("input", function () {
+        social.iconUrl = iconUrlInput.value;
+        if (iconUrlInput.value) { social.customIcon = ""; iconUploadInput.value = ""; }
+        render();
+      });
+
+      var iconUploadLabel = document.createElement("label");
+      iconUploadLabel.className = "file-btn btn-small";
+      iconUploadLabel.textContent = "Upload icon";
+      var iconUploadInput = document.createElement("input");
+      iconUploadInput.type = "file";
+      iconUploadInput.accept = "image/*";
+      iconUploadInput.style.display = "none";
+      iconUploadInput.addEventListener("change", function () {
+        var file = iconUploadInput.files && iconUploadInput.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          social.customIcon = reader.result;
+          social.iconUrl = "";
+          iconUrlInput.value = "";
+          render();
+        };
+        reader.readAsDataURL(file);
+      });
+      iconUploadLabel.appendChild(iconUploadInput);
+
+      line2.appendChild(iconUrlInput);
+      line2.appendChild(iconUploadLabel);
+      row.appendChild(line2);
+
+      if (social.iconUrl || social.customIcon) {
+        var clearIconBtn = document.createElement("button");
+        clearIconBtn.type = "button";
+        clearIconBtn.className = "clear-link";
+        clearIconBtn.style.marginTop = "6px";
+        clearIconBtn.textContent = "remove custom icon";
+        clearIconBtn.addEventListener("click", function () {
+          social.iconUrl = ""; social.customIcon = "";
+          render();
+          renderSocialList();
+        });
+        row.appendChild(clearIconBtn);
+      }
+
       socialListEl.appendChild(row);
     });
   }
 
   document.getElementById("addSocial").addEventListener("click", function () {
-    state.socials.push({ id: ++socialIdCounter, platform: "linkedin", url: "", label: "", customIcon: "" });
+    state.socials.push({ id: ++socialIdCounter, platform: "linkedin", url: "", label: "", customIcon: "", iconUrl: "" });
     renderSocialList();
     render();
   });
 
   document.getElementById("clearAll").addEventListener("click", function () {
     if (!confirm("Clear all fields and start over?")) return;
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* storage unavailable */ }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(blankState)); } catch (e) { /* storage unavailable */ }
     location.reload();
   });
 
@@ -750,7 +868,8 @@
   socialIdCounter = state.socials.reduce(function (max, s) { return Math.max(max, s.id); }, 100);
   bindTextFields();
   bindColorAndSelect();
-  bindLogo();
+  bindImagePair("profilePhotoUrl", "profilePhotoUpload", "profilePhotoStatus", "clearProfilePhoto", "profilePhotoUrl", "profilePhotoDataUrl", "No profile photo set.");
+  bindImagePair("logoUrl", "logoUpload", "logoStatus", "clearLogo", "logoUrl", "logoDataUrl", "No logo set.");
   renderSocialList();
   render();
 
