@@ -126,8 +126,6 @@
           </select>
         </div>
       </div>
-      <label class="inline"><input type="checkbox" id="contactIconCircle"> Circular contact icon background (square if unchecked)</label>
-      <label class="inline"><input type="checkbox" id="socialIconCircle"> Colored circle behind social icons</label>
     </fieldset>
 
     <fieldset>
@@ -220,8 +218,6 @@
     address: "1225 Eye St NW #600, Washington, D.C 20005",
     accentColor: "#c01f41",
     fontFamily: "Arial, Helvetica, sans-serif",
-    contactIconCircle: true,
-    socialIconCircle: false,
     profilePhotoUrl: "",
     profilePhotoDataUrl: "",
     profilePhotoSize: "60",
@@ -336,26 +332,20 @@
     if (social.customIcon) return social.customIcon;
     if (SOCIAL_ICON_URLS[social.platform]) return SOCIAL_ICON_URLS[social.platform];
     var letters = social.platform === "custom" ? (social.label || "?").slice(0, 4) : SOCIAL_LABELS[social.platform] || "?";
-    return makeLetterBadge(letters, state.accentColor, state.socialIconCircle);
+    return makeLetterBadge(letters, state.accentColor, false);
   }
 
   // ---------- Signature HTML template (Outlook-safe: inline styles, explicit table attrs, no gradients, table cells instead of inline-block for anything that must stay side-by-side) ----------
 
   function contactRow(iconKind, altText, innerHtml) {
-    // These icons are light-colored assets meant to sit on a colored backdrop, so the
-    // swatch isn't optional — only its shape (square/circle) is. Sized tight around the
-    // icon itself (not the full alignment column) so it reads as a small badge, not a block.
+    // These icons are light-colored assets that need a colored backdrop to be visible.
+    // The color is applied to the <img> itself (shows through its transparent pixels),
+    // not a separate wrapping cell, so the colored area is exactly the icon's own bounds.
     var icon = CONTACT_ICON_URLS[iconKind];
-    var swatchSize = 22, iconSize = 16;
-    var swatchStyle = "background-color:" + state.accentColor + ";" + (state.contactIconCircle ? "border-radius:50%;" : "");
     return (
       '<tr style="height:26px;">' +
         '<td width="26" height="26" valign="middle" align="center">' +
-          '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tbody><tr>' +
-            '<td width="' + swatchSize + '" height="' + swatchSize + '" align="center" valign="middle" style="' + swatchStyle + '">' +
-              '<img src="' + icon + '" width="' + iconSize + '" height="' + iconSize + '" alt="' + escapeAttr(altText) + '" style="display:block;border:0;">' +
-            "</td>" +
-          "</tr></tbody></table>" +
+          '<img src="' + icon + '" width="18" height="18" alt="' + escapeAttr(altText) + '" style="display:block;border:0;background-color:' + state.accentColor + ';">' +
         '</td>' +
         '<td width="8" style="font-size:1px;line-height:1px;">&nbsp;</td>' +
         '<td valign="middle" style="padding:0;color:#000000;font-family:' + state.fontFamily + ';font-size:14px;">' +
@@ -388,13 +378,12 @@
 
   function buildSocialsHtml() {
     if (!state.socials.length) return "";
-    var swatchStyle = state.socialIconCircle ? "background-color:" + state.accentColor + ";border-radius:50%;" : "";
     var cells = "";
     state.socials.forEach(function (s) {
       if (!s.url) return;
       var icon = socialIconSrc(s);
       if (cells) cells += '<td width="8" style="font-size:1px;line-height:1px;">&nbsp;</td>';
-      cells += '<td valign="middle" align="center" style="' + swatchStyle + '">' +
+      cells += '<td valign="middle" align="center">' +
         '<a href="' + escapeAttr(s.url) + '" target="_blank" rel="noopener noreferrer">' +
           '<img src="' + icon + '" width="24" height="24" alt="' + escapeAttr(s.platform) + '" style="display:block;border:0;">' +
         "</a>" +
@@ -629,14 +618,6 @@
     var fontEl = document.getElementById("fontFamily");
     fontEl.value = state.fontFamily;
     fontEl.addEventListener("change", function () { state.fontFamily = fontEl.value; render(); });
-
-    var contactCircleEl = document.getElementById("contactIconCircle");
-    contactCircleEl.checked = state.contactIconCircle;
-    contactCircleEl.addEventListener("change", function () { state.contactIconCircle = contactCircleEl.checked; render(); });
-
-    var socialCircleEl = document.getElementById("socialIconCircle");
-    socialCircleEl.checked = state.socialIconCircle;
-    socialCircleEl.addEventListener("change", function () { state.socialIconCircle = socialCircleEl.checked; render(); });
 
     var ctaEnabledEl = document.getElementById("ctaEnabled");
     ctaEnabledEl.checked = state.ctaEnabled;
