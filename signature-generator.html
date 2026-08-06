@@ -158,6 +158,7 @@
 
     <fieldset>
       <legend>Social links</legend>
+      <div class="hint" style="margin-top:0;margin-bottom:8px;">Paste a link — the platform/icon auto-detects from its domain. The dropdown is only for overriding that.</div>
       <div id="socialList"></div>
       <button type="button" class="btn btn-small" id="addSocial">+ Add social link</button>
     </fieldset>
@@ -230,8 +231,8 @@
     ctaUrl: "https://www.epi.org/epi40",
     footerText: "",
     socials: [
-      { id: 1, platform: "linkedin", url: "https://www.linkedin.com/in/zane-mokhiber-06241411b/", label: "", customIcon: "", iconUrl: "" },
-      { id: 2, platform: "bluesky", url: "https://bsky.app/profile/zanemokhiber.bsky.social", label: "", customIcon: "", iconUrl: "" }
+      { id: 1, platform: "linkedin", url: "https://www.linkedin.com/in/zane-mokhiber-06241411b/", label: "", customIcon: "", iconUrl: "", platformAuto: true },
+      { id: 2, platform: "bluesky", url: "https://bsky.app/profile/zanemokhiber.bsky.social", label: "", customIcon: "", iconUrl: "", platformAuto: true }
     ]
   };
 
@@ -297,6 +298,29 @@
     var c = document.createElement("canvas");
     c.width = size; c.height = size;
     return c;
+  }
+
+  var PLATFORM_DOMAINS = [
+    { platform: "linkedin", re: /(^|\.)linkedin\.com$/i },
+    { platform: "x", re: /(^|\.)(x\.com|twitter\.com)$/i },
+    { platform: "bluesky", re: /(^|\.)(bsky\.app|bsky\.social)$/i },
+    { platform: "instagram", re: /(^|\.)instagram\.com$/i },
+    { platform: "facebook", re: /(^|\.)(facebook\.com|fb\.com)$/i },
+    { platform: "threads", re: /(^|\.)threads\.net$/i },
+    { platform: "github", re: /(^|\.)github\.com$/i }
+  ];
+
+  // Best-effort platform detection from a pasted URL's hostname, so picking an icon
+  // usually doesn't require touching the platform dropdown at all.
+  function detectPlatformFromUrl(url) {
+    if (!url) return null;
+    var withScheme = /^https?:\/\//i.test(url) ? url : "https://" + url;
+    var hostname;
+    try { hostname = new URL(withScheme).hostname; } catch (e) { return null; }
+    for (var i = 0; i < PLATFORM_DOMAINS.length; i++) {
+      if (PLATFORM_DOMAINS[i].re.test(hostname)) return PLATFORM_DOMAINS[i].platform;
+    }
+    return null;
   }
 
   var SOCIAL_LABELS = {
@@ -704,6 +728,7 @@
       });
       select.addEventListener("change", function () {
         social.platform = select.value;
+        social.platformAuto = false; // manual choice from here on; stop overriding it from the URL
         render();
         renderSocialList();
       });
@@ -712,7 +737,19 @@
       urlInput.type = "text";
       urlInput.placeholder = "https://...";
       urlInput.value = social.url;
-      urlInput.addEventListener("input", function () { social.url = urlInput.value; render(); });
+      urlInput.addEventListener("input", function () {
+        social.url = urlInput.value;
+        if (social.platformAuto !== false) {
+          var detected = detectPlatformFromUrl(social.url);
+          if (detected && detected !== social.platform) {
+            social.platform = detected;
+            render();
+            renderSocialList();
+            return;
+          }
+        }
+        render();
+      });
 
       var removeBtn = document.createElement("button");
       removeBtn.type = "button";
@@ -798,7 +835,7 @@
   }
 
   document.getElementById("addSocial").addEventListener("click", function () {
-    state.socials.push({ id: ++socialIdCounter, platform: "linkedin", url: "", label: "", customIcon: "", iconUrl: "" });
+    state.socials.push({ id: ++socialIdCounter, platform: "custom", url: "", label: "", customIcon: "", iconUrl: "", platformAuto: true });
     renderSocialList();
     render();
   });
