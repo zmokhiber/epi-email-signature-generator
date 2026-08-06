@@ -300,6 +300,32 @@
     return c;
   }
 
+  // GitHub's mark, drawn from its exact vector path (simple-icons project, CC0) rather
+  // than hotlinked — the hosted "fluidicon" has visible gradient/JPEG-style artifacts in
+  // the tail, and drawing it ourselves also means one less external image to depend on.
+  var GITHUB_MARK_PATH = "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12";
+
+  var githubIconCache = null;
+  function makeGithubIcon() {
+    if (githubIconCache) return githubIconCache;
+    var size = 96;
+    var canvas = makeCanvas(size);
+    var ctx = canvas.getContext("2d");
+    var cx = size / 2, cy = size / 2, r = size / 2;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    var path = new Path2D(GITHUB_MARK_PATH);
+    var scale = (size * 0.82) / 24;
+    ctx.save();
+    ctx.translate(cx - (24 * scale) / 2, cy - (24 * scale) / 2);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill(path);
+    ctx.restore();
+    githubIconCache = canvas.toDataURL("image/png");
+    return githubIconCache;
+  }
+
   var PLATFORM_DOMAINS = [
     { platform: "linkedin", re: /(^|\.)linkedin\.com$/i },
     { platform: "x", re: /(^|\.)(x\.com|twitter\.com)$/i },
@@ -325,7 +351,7 @@
 
   var SOCIAL_LABELS = {
     linkedin: "in", x: "X", bluesky: "bsky", instagram: "ig",
-    facebook: "f", threads: "@", github: "gh"
+    facebook: "f", threads: "@"
   };
 
   function makeLetterBadge(letters, accentColor, circleBg) {
@@ -354,6 +380,7 @@
   function socialIconSrc(social) {
     if (social.iconUrl) return social.iconUrl;
     if (social.customIcon) return social.customIcon;
+    if (social.platform === "github") return makeGithubIcon();
     if (SOCIAL_ICON_URLS[social.platform]) return SOCIAL_ICON_URLS[social.platform];
     var letters = social.platform === "custom" ? (social.label || "?").slice(0, 4) : SOCIAL_LABELS[social.platform] || "?";
     return makeLetterBadge(letters, state.accentColor, false);
@@ -738,14 +765,19 @@
       urlInput.placeholder = "https://...";
       urlInput.value = social.url;
       urlInput.addEventListener("input", function () {
+        // Update the platform in place (select.value + toggling the label field) rather
+        // than calling renderSocialList() here: that rebuilds this very input mid-keystroke
+        // and steals focus, silently truncating whatever the user types after that point.
         social.url = urlInput.value;
         if (social.platformAuto !== false) {
           var detected = detectPlatformFromUrl(social.url);
           if (detected && detected !== social.platform) {
+            var wasCustom = social.platform === "custom";
             social.platform = detected;
-            render();
-            renderSocialList();
-            return;
+            select.value = detected;
+            if (wasCustom && labelInput && labelInput.parentNode) {
+              labelInput.parentNode.removeChild(labelInput);
+            }
           }
         }
         render();
